@@ -104,3 +104,9 @@
 - [x] Add a safe auto-format control that normalizes valid JSON without overwriting invalid input.
 - [x] Prevent malformed payloads from triggering signed webhook tests while preserving editor text.
 - [x] Add parser/formatter tests and verify desktop and mobile editor layouts.
+
+- [x] Extract line and column locations from webhook JSON parse errors.
+- [x] Display line and column indicators alongside the invalid payload message.
+- [x] Add single-line and multi-line parse-location tests and verify responsive layout.
+
+- [x] Capture a mobile-width malformed payload preview showing the line and column diagnostic.

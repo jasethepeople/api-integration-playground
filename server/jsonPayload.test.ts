@@ -20,5 +20,17 @@ describe("webhook payload JSON validation", () => {
     expect(formatJsonPayload("")).toMatchObject({ valid: false, formatted: "", error: "Payload is required." });
     expect(formatJsonPayload('{"id": }')).toMatchObject({ valid: false, formatted: '{"id": }' });
   });
+
+  it("reports a one-based line and column for single-line errors", () => {
+    const result = validateJsonPayload('{"id": }');
+    expect(result.location?.line).toBe(1);
+    expect(result.location?.column).toBeGreaterThan(1);
+  });
+
+  it("reports the correct line for multi-line errors", () => {
+    const result = validateJsonPayload('{\n  "id": "evt_1",\n  "amount": }');
+    expect(result.location?.line).toBe(3);
+    expect(result.location?.column).toBeGreaterThan(1);
+  });
 });
 
