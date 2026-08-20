@@ -12,6 +12,7 @@ import { buildWebhookCurl } from "@/lib/webhookHistory";
 import { buildComparisonCard } from "@/lib/mockComparison";
 import { AutoGenerationMode, buildPresetPackHandoff, filterMockVariablePresets, generateAutomaticMockVariables, getPresetHandoffNotice, readCustomPresets, readPresetPackHandoff, resolvePresetDeleteDecision, resolvePresetImportDecision, saveCustomPreset, serializeCustomPresetPack, writeCustomPresets } from "@/lib/mockPresetManager";
 import { appendGenerationHistory, readGenerationHistory, restoreGenerationVariables, type MockGenerationHistoryEntry, writeGenerationHistory } from "@/lib/mockGenerationHistory";
+import { PLAYGROUND_SHORTCUT_LABELS, resolvePlaygroundShortcut } from "@/lib/keyboardShortcuts";
 
 type LogEntry = { id: string; layer: "BROWSER" | "EXPRESS"; method: string; path: string; status: number; latency: number; time: string; verification?: "PASS" | "FAIL" };
 type WebhookHistoryEntry = { id: string; type: string; provider: string; algorithm: string; payload: JsonValue; generated: string; effective: string; status: number; verification: "PASS" | "FAIL"; timestamp: string; createdAt?: number; snapshot: JsonValue };
@@ -219,10 +220,23 @@ export default function Home() {
   function comparisonPayload(provider: MockWebhookProvider) { return buildComparisonCard(provider, webhook, previewVariables, effectiveWebhookAlgorithm as "sha256" | "sha512"); }
   async function copyHistoryCurl(entry: WebhookHistoryEntry) { const command = buildWebhookCurl(entry); const success = await copyText(navigator.clipboard?.writeText?.bind(navigator.clipboard), command); if (success) { setHistoryCopiedCurl(entry.id); setTimeout(() => setHistoryCopiedCurl(null), 1200); } }
 
+  useEffect(() => {
+    function onKeyDown(event: KeyboardEvent) {
+      const action = resolvePlaygroundShortcut(event);
+      if (!action || busy) return;
+      if (action === "generate") { event.preventDefault(); autoGenerateMockVariables(); return; }
+      if (action === "restore") { const latest = generationHistory[0]; if (!latest) return; event.preventDefault(); restoreGeneration(latest); return; }
+      if (action === "trigger" && payloadValidation.valid) { event.preventDefault(); void triggerWebhook(); }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [busy, generationHistory, payloadValidation.valid, webhookPayload, webhookSecret, webhookProvider, webhookTolerance, webhookTimestamp, signatureOverride, effectiveWebhookAlgorithm, autoGenerationMode, mockVariables, mockSeed]);
+
 
   return <main className="console-shell">
     <header className="topbar"><div className="brand"><span className="brand-mark">[ ]</span><span>API / PLAYGROUND</span></div><div className="status-chip"><span className="status-dot" /> PROXY ONLINE <span className="mono">:3000</span></div></header>
     <section className="hero"><div><p className="eyebrow">INTEGRATION SIMULATOR / 01</p><h1>BUILD.<br /><span>BREAK.</span><br />OBSERVE.</h1></div><p className="hero-note">A controlled environment for constructing REST requests and simulating inbound events.<br /><span className="mono">NO GUESSWORK. JUST PAYLOADS.</span></p></section>
+    <div className="shortcut-legend" aria-label="Keyboard shortcuts"><span>SHORTCUTS</span><code>{PLAYGROUND_SHORTCUT_LABELS.generate} GENERATE</code><code>{PLAYGROUND_SHORTCUT_LABELS.restore} RESTORE LATEST</code><code>{PLAYGROUND_SHORTCUT_LABELS.trigger} TRIGGER WEBHOOK</code></div>
     <div className="workspace">
       <section className="left-pane">
         <div className="section-kicker"><span>01</span><span>REQUEST BUILDER</span><span className="rule" /></div>

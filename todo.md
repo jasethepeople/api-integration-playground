@@ -161,3 +161,8 @@
 - [x] Add a shareable preset-pack handoff that copies an encoded pack link with safe fallback behavior.
 - [x] Add focused tests for generation history, restore, confirmations, sharing, persistence, and bounded behavior.
 - [x] Complete desktop/mobile verification, typecheck, full tests, and one final checkpoint for the finished playground.
+
+- [x] Add keyboard shortcuts for automatic variable generation, latest-generation restore, and signed webhook triggering.
+- [x] Safeguard shortcuts against editable controls, invalid payloads, busy states, and empty generation history.
+- [x] Add visible shortcut hints and focused shortcut-resolution tests.
+- [x] Verify desktop/mobile presentation, typecheck, full tests, and save a checkpoint.
