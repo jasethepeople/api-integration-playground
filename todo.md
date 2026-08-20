@@ -124,3 +124,22 @@
 - [x] Align Slack simulation, generated/effective previews, and reference headers to one explicit combined or separate-header contract.
 - [x] Restrict or adapt the algorithm control and response metadata so GitHub and Slack accurately show SHA-256 usage.
 - [x] Add focused tests for Slack header/reference accuracy and provider-specific algorithm metadata.
+
+- [x] Add editable mock-template variables for amounts, IDs, timestamps, and provider-specific fields.
+- [x] Add safe variable validation and visible reset/apply controls for mock generation.
+- [x] Add randomize toggle with deterministic seed behavior and generated-value preview.
+- [x] Preserve custom payloads until explicit generation and keep provider/event templates compatible.
+- [x] Add comprehensive unit coverage for variable substitution, validation, randomization, and provider presets.
+- [x] Verify desktop/mobile UX, typecheck, full tests, and save a checkpoint.
+
+- [x] Add editable mock-template variables for amounts, IDs, timestamps, currencies, identity fields, and provider-specific fixture values.
+- [x] Add variable validation, reset/apply controls, generated-value preview, and explicit custom-payload preservation.
+- [x] Add randomize toggle with reproducible seed handling and persistent preference safety.
+- [x] Add provider comparison view for side-by-side payload, canonical string, and header inspection.
+- [x] Add webhook history date-range filtering with clear no-match states.
+- [x] Add export-to-cURL for selected webhook history entries with safe shell quoting.
+- [x] Add comprehensive unit coverage for variables, randomization, comparison, date filtering, and cURL export.
+
+- [x] Add an explicit generated-value preview showing the exact variables that Generate Mock will apply.
+- [x] Add a visible reproducible seed control and persist it safely with the randomize preference.
+- [x] Add focused tests for comparison payload fallback and provider reference inputs.

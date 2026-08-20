@@ -18,11 +18,11 @@ const entry = {
 describe("webhook history browser storage", () => {
   it("round-trips bounded history and filter preferences", () => {
     const history = Array.from({ length: 9 }, (_, index) => ({ ...entry, id: `evt-${index}` }));
-    const raw = serializeHistoryState(history, { provider: "stripe", type: "payment.succeeded", verification: "PASS" });
+    const raw = serializeHistoryState(history, { provider: "stripe", type: "payment.succeeded", verification: "PASS", startDate: "", endDate: "" });
     const restored = restoreHistoryState(raw);
     expect(restored.history).toHaveLength(8);
     expect(restored.history[0]?.id).toBe("evt-0");
-    expect(restored.filter).toEqual({ provider: "stripe", type: "payment.succeeded", verification: "PASS" });
+    expect(restored.filter).toEqual({ provider: "stripe", type: "payment.succeeded", verification: "PASS", startDate: "", endDate: "" });
   });
 
   it("ignores malformed storage payloads and invalid entries", () => {
