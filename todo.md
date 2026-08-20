@@ -51,3 +51,10 @@
 - [x] Add provider-aware header previews, effective-header behavior, and verification diagnostics.
 - [x] Add tests for provider profiles, multi-signature headers, tampering, expiry, and generic-mode regression.
 - [x] Re-run typecheck, tests, smoke tests, and visual preview verification.
+
+- [x] Add provider-format reference content for generic HMAC and Stripe-style signatures.
+- [x] Show canonical signing strings, header formats, and live active-profile examples.
+- [x] Integrate and style the reference panel without disrupting the existing console layout.
+- [x] Add or update tests and run typecheck, smoke tests, and visual preview verification.
+
+- [x] Re-run a webhook smoke test after the provider reference-panel change and record the result.
