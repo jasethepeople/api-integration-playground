@@ -83,3 +83,8 @@
 - [x] Add provider, event-type, and verification-outcome filter controls to webhook history.
 - [x] Preserve bounded newest-first ordering, selection, and copy actions under filtering.
 - [x] Show filtered result counts and test filter combinations plus responsive layout.
+
+- [x] Persist bounded webhook history to browser local storage.
+- [x] Persist provider, event-type, and verification filter preferences.
+- [x] Restore valid saved state safely and ignore malformed or unavailable storage.
+- [x] Test persistence helpers, restoration behavior, typecheck, and responsive layout.

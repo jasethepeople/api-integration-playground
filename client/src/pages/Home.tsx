@@ -4,7 +4,7 @@ import { highlightJson } from "@/lib/jsonHighlight";
 import { getProviderReference } from "@/lib/providerReference";
 import { copyText } from "@/lib/clipboard";
 import { getCopyResetTransition, getCopyTransition, getReferenceCopyLabel, getReferenceCopyValue } from "@/lib/referenceCopy";
-import { appendHistory, filterHistory, getHistoryCopyLabel, getHistoryInspection, getHistorySignature } from "@/lib/webhookHistory";
+import { appendHistory, filterHistory, getHistoryCopyLabel, getHistoryInspection, getHistorySignature, readHistoryStorage, writeHistoryStorage } from "@/lib/webhookHistory";
 
 type LogEntry = { id: string; layer: "BROWSER" | "EXPRESS"; method: string; path: string; status: number; latency: number; time: string; verification?: "PASS" | "FAIL" };
 type WebhookHistoryEntry = { id: string; type: string; provider: string; algorithm: string; payload: JsonValue; generated: string; effective: string; status: number; verification: "PASS" | "FAIL"; timestamp: string; snapshot: JsonValue };
@@ -68,11 +68,12 @@ export default function Home() {
   const [referenceCopied, setReferenceCopied] = useState<"canonical" | "header" | null>(null);
   const [referenceCopyError, setReferenceCopyError] = useState<"canonical" | "header" | null>(null);
   const [responseMode, setResponseMode] = useState<"tree" | "raw">("tree");
-  const [webhookHistory, setWebhookHistory] = useState<WebhookHistoryEntry[]>([]);
+  const [restoredHistoryState] = useState(() => readHistoryStorage(typeof window === "undefined" ? undefined : window.localStorage));
+  const [webhookHistory, setWebhookHistory] = useState<WebhookHistoryEntry[]>(() => restoredHistoryState.history as WebhookHistoryEntry[]);
   const [selectedHistoryId, setSelectedHistoryId] = useState<string | null>(null);
   const [historyCopied, setHistoryCopied] = useState<string | null>(null);
   const [historyCopyError, setHistoryCopyError] = useState<string | null>(null);
-  const [historyFilter, setHistoryFilter] = useState({ provider: "ALL", type: "ALL", verification: "ALL" as "ALL" | "PASS" | "FAIL" });
+  const [historyFilter, setHistoryFilter] = useState(restoredHistoryState.filter);
 
   const activeEndpoint = endpoints[selectedEndpoint];
   const paramNames = useMemo(() => Array.from(path.matchAll(/:([A-Za-z0-9_]+)/g)).map(match => match[1]), [path]);
@@ -83,6 +84,10 @@ export default function Home() {
   const filteredWebhookHistory = useMemo(() => filterHistory(webhookHistory, historyFilter), [webhookHistory, historyFilter]);
   const historyProviders = useMemo(() => Array.from(new Set(webhookHistory.map(entry => entry.provider))), [webhookHistory]);
   const historyTypes = useMemo(() => Array.from(new Set(webhookHistory.map(entry => entry.type))), [webhookHistory]);
+
+  useEffect(() => {
+    writeHistoryStorage(typeof window === "undefined" ? undefined : window.localStorage, webhookHistory, historyFilter);
+  }, [webhookHistory, historyFilter]);
 
   useEffect(() => {
     let cancelled = false;
