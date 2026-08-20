@@ -1,4 +1,4 @@
-export type ProviderReferenceProfile = "generic" | "stripe";
+export type ProviderReferenceProfile = "generic" | "stripe" | "github" | "slack";
 
 export type ProviderReference = {
   name: string;
@@ -9,6 +9,12 @@ export type ProviderReference = {
 };
 
 export function getProviderReference(provider: ProviderReferenceProfile, algorithm: string, generatedHeader: string): ProviderReference {
+  if (provider === "github") {
+    return { name: "GITHUB", description: "Raw-body HMAC digest sent as X-Hub-Signature-256.", canonical: "${raw_body}", header: "sha256=${hmac_sha256}", exampleLabel: generatedHeader || "sha256=..." };
+  }
+  if (provider === "slack") {
+    return { name: "SLACK", description: "Versioned timestamped signing string represented as a combined simulator header.", canonical: "v0:${timestamp}:${raw_body}", header: "t=${timestamp},v0=${hmac_sha256}", exampleLabel: generatedHeader || "t=...,v0=..." };
+  }
   if (provider === "stripe") {
     return {
       name: "STRIPE-STYLE",

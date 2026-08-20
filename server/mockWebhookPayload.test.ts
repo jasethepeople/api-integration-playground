@@ -17,5 +17,15 @@ describe("mock webhook payload generation", () => {
       expect(json).toContain("\n");
     }
   });
+
+  it("creates GitHub push and pull request payloads", () => {
+    expect(generateMockWebhookPayload("github", "push")).toMatchObject({ ref: "refs/heads/main", repository: { full_name: "octo-org/api-playground" }, sender: { login: "octocat" } });
+    expect(generateMockWebhookPayload("github", "pull_request")).toMatchObject({ action: "opened", number: 42, pull_request: { state: "open" } });
+  });
+
+  it("creates Slack event callback and URL verification payloads", () => {
+    expect(generateMockWebhookPayload("slack", "event_callback")).toMatchObject({ type: "event_callback", event: { type: "message" }, event_id: "Ev01234567" });
+    expect(generateMockWebhookPayload("slack", "url_verification")).toMatchObject({ type: "url_verification", challenge: "challenge_mock_001" });
+  });
 });
 

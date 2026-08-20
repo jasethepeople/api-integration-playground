@@ -2,7 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createHmac, timingSafeEqual, randomUUID } from "node:crypto";
 
 export type HmacAlgorithm = "sha256" | "sha512";
-export type ProviderProfile = "generic" | "stripe";
+export type ProviderProfile = "generic" | "stripe" | "github" | "slack";
 export type WebhookSignature = { header: string; timestamp: number; digest: string; algorithm: HmacAlgorithm; provider: ProviderProfile; v0?: string };
 export type VerificationResult = { valid: boolean; reason: string; provider: ProviderProfile; timestamp: number; ageSeconds: number; expectedDigest: string; receivedDigest: string; matchedVersion?: "v1" | "v0" };
 
@@ -18,6 +18,14 @@ function digestPayload(payload: string, secret: string, algorithm: HmacAlgorithm
 }
 
 export function signWebhookPayload(payload: string, secret: string, timestamp = Math.floor(Date.now() / 1000), algorithm: HmacAlgorithm = "sha256", provider: ProviderProfile = "generic"): WebhookSignature {
+  if (provider === "github") {
+    const digest = createHmac("sha256", secret).update(payload, "utf8").digest("hex");
+    return { header: `sha256=${digest}`, timestamp, digest, algorithm: "sha256", provider };
+  }
+  if (provider === "slack") {
+    const digest = createHmac("sha256", secret).update(`v0:${timestamp}:${payload}`, "utf8").digest("hex");
+    return { header: `t=${timestamp},v0=${digest}`, timestamp, digest, algorithm: "sha256", provider };
+  }
   const digest = digestPayload(payload, secret, algorithm, timestamp);
   if (provider === "stripe") {
     const v0 = digestPayload(payload, secret, "sha256", timestamp - 1);
@@ -27,6 +35,30 @@ export function signWebhookPayload(payload: string, secret: string, timestamp = 
 }
 
 export function verifyWebhookSignature(payload: string, signatureHeader: string, secret: string, algorithm: HmacAlgorithm = "sha256", toleranceSeconds = 300, now = Math.floor(Date.now() / 1000), provider: ProviderProfile = "generic"): VerificationResult {
+  if (provider === "github") {
+    const match = signatureHeader.match(/^sha256=([a-f0-9]{64})$/i);
+    const receivedDigest = match ? match[1].toLowerCase() : "";
+    const expectedDigest = createHmac("sha256", secret).update(payload, "utf8").digest("hex");
+    if (!match) return { valid: false, reason: "Malformed GitHub signature header", provider, timestamp: now, ageSeconds: 0, expectedDigest, receivedDigest };
+    const candidateBuffer = Buffer.from(expectedDigest, "utf8");
+    const receivedBuffer = Buffer.from(receivedDigest, "utf8");
+    if (candidateBuffer.length === receivedBuffer.length && timingSafeEqual(candidateBuffer, receivedBuffer)) return { valid: true, reason: "GitHub signature verified", provider, timestamp: now, ageSeconds: 0, expectedDigest, receivedDigest };
+    return { valid: false, reason: "GitHub signature mismatch", provider, timestamp: now, ageSeconds: 0, expectedDigest, receivedDigest };
+  }
+  if (provider === "slack") {
+    const match = signatureHeader.match(/(?:^|,)\s*v0=([a-f0-9]{64})/i);
+    const receivedDigest = match ? match[1].toLowerCase() : "";
+    const timestampMatch = signatureHeader.match(/(?:^|,)\s*t=(\d+)/);
+    const timestamp = timestampMatch ? Number(timestampMatch[1]) : now;
+    const ageSeconds = now - timestamp;
+    const expectedDigest = createHmac("sha256", secret).update(`v0:${timestamp}:${payload}`, "utf8").digest("hex");
+    if (!match) return { valid: false, reason: "Malformed Slack signature header", provider, timestamp, ageSeconds, expectedDigest, receivedDigest };
+    if (Math.abs(ageSeconds) > toleranceSeconds) return { valid: false, reason: `Slack timestamp outside ${toleranceSeconds}s tolerance`, provider, timestamp, ageSeconds, expectedDigest, receivedDigest };
+    const candidateBuffer = Buffer.from(expectedDigest, "utf8");
+    const receivedBuffer = Buffer.from(receivedDigest, "utf8");
+    if (candidateBuffer.length === receivedBuffer.length && timingSafeEqual(candidateBuffer, receivedBuffer)) return { valid: true, reason: "Slack signature verified", provider, timestamp, ageSeconds, expectedDigest, receivedDigest };
+    return { valid: false, reason: "Slack signature mismatch", provider, timestamp, ageSeconds, expectedDigest, receivedDigest };
+  }
   const timestampMatch = signatureHeader.match(/(?:^|,)\s*t=(\d+)/);
   const timestamp = timestampMatch ? Number(timestampMatch[1]) : 0;
   const ageSeconds = timestamp ? now - timestamp : Number.POSITIVE_INFINITY;
@@ -60,6 +92,6 @@ export function registerApiRoutes(app: Express) {
     catch (error) { const log = addLog(normalizedMethod, path, 502, Date.now() - started); return res.status(502).json({ error: "UPSTREAM_UNREACHABLE", detail: String(error), serverLog: log }); }
   });
   app.post("/api/webhooks/simulate", (req: Request, res: Response) => {
-    const started = Date.now(); const { type = "event.received", payload = {}, secret = "whsec_demo", algorithm = "sha256", provider = "generic", signature = "", timestamp = Math.floor(Date.now() / 1000), toleranceSeconds = 300 } = req.body ?? {}; const selectedProvider = (provider === "stripe" ? "stripe" : "generic") as ProviderProfile; const rawPayload = JSON.stringify(payload); const generated = signWebhookPayload(rawPayload, secret, timestamp, algorithm as HmacAlgorithm, selectedProvider); const suppliedSignature = String(signature || generated.header); const verification = verifyWebhookSignature(rawPayload, suppliedSignature, secret, algorithm as HmacAlgorithm, Number(toleranceSeconds), Math.floor(Date.now() / 1000), selectedProvider); const eventPayload = { id: `evt_${randomUUID().slice(0, 8)}`, type, livemode: false, received_at: new Date().toISOString(), data: payload }; const status = verification.valid ? 202 : 401; const log = addLog("POST", `/webhooks/${type}`, status, Date.now() - started, verification.valid ? "PASS" : "FAIL"); return res.status(status).json({ payload: eventPayload, signature: { header: suppliedSignature, generated: generated.header, provider: selectedProvider, algorithm, timestamp: generated.timestamp, versions: selectedProvider === "stripe" ? ["v1", "v0"] : ["v1"] }, verification, serverLog: log });
+    const started = Date.now(); const { type = "event.received", payload = {}, secret = "whsec_demo", algorithm = "sha256", provider = "generic", signature = "", timestamp = Math.floor(Date.now() / 1000), toleranceSeconds = 300 } = req.body ?? {}; const selectedProvider = (["stripe", "github", "slack"].includes(provider) ? provider : "generic") as ProviderProfile; const rawPayload = JSON.stringify(payload); const generated = signWebhookPayload(rawPayload, secret, timestamp, algorithm as HmacAlgorithm, selectedProvider); const suppliedSignature = String(signature || generated.header); const verification = verifyWebhookSignature(rawPayload, suppliedSignature, secret, algorithm as HmacAlgorithm, Number(toleranceSeconds), Math.floor(Date.now() / 1000), selectedProvider); const eventPayload = { id: `evt_${randomUUID().slice(0, 8)}`, type, livemode: false, received_at: new Date().toISOString(), data: payload }; const status = verification.valid ? 202 : 401; const log = addLog("POST", `/webhooks/${type}`, status, Date.now() - started, verification.valid ? "PASS" : "FAIL"); return res.status(status).json({ payload: eventPayload, signature: { header: suppliedSignature, generated: generated.header, provider: selectedProvider, algorithm: generated.algorithm, timestamp: generated.timestamp, versions: selectedProvider === "stripe" ? ["v1", "v0"] : selectedProvider === "github" ? ["sha256"] : selectedProvider === "slack" ? ["v0"] : ["v1"] }, verification, serverLog: log });
   });
 }

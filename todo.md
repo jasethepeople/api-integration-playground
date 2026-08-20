@@ -115,3 +115,12 @@
 - [x] Generate valid formatted payloads for payment.succeeded, user.created, and order.updated events.
 - [x] Add an explicit generator control that replaces the editor only on user action.
 - [x] Add provider/event template tests and verify desktop and mobile layouts.
+
+- [x] Add GitHub provider presets for push and pull_request events.
+- [x] Add Slack provider presets for event_callback and url_verification events.
+- [x] Add provider-specific payload/header reference data and integrate new generator profiles.
+- [x] Add provider preset tests and verify desktop/mobile layout plus generic/Stripe regression.
+
+- [x] Align Slack simulation, generated/effective previews, and reference headers to one explicit combined or separate-header contract.
+- [x] Restrict or adapt the algorithm control and response metadata so GitHub and Slack accurately show SHA-256 usage.
+- [x] Add focused tests for Slack header/reference accuracy and provider-specific algorithm metadata.

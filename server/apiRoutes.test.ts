@@ -58,6 +58,15 @@ describe("HMAC webhook verification", () => {
     const v0Only = `t=${now},v0=${signed.v0}`;
     expect(verifyWebhookSignature(payload, v0Only, secret, "sha256", 300, now, "stripe")).toMatchObject({ valid: true, matchedVersion: "v0" });
   });
+
+  it("accepts GitHub raw-body and Slack timestamped signatures", () => {
+    const github = signWebhookPayload(payload, secret, now, "sha512", "github");
+    const slack = signWebhookPayload(payload, secret, now, "sha512", "slack");
+    expect(github.header).toMatch(/^sha256=[a-f0-9]{64}$/);
+    expect(verifyWebhookSignature(payload, github.header, secret, "sha512", 300, now, "github").valid).toBe(true);
+    expect(slack.header).toMatch(new RegExp(`^t=${now},v0=[a-f0-9]{64}$`));
+    expect(verifyWebhookSignature(payload, slack.header, secret, "sha512", 300, now, "slack").valid).toBe(true);
+  });
 });
 
 describe("Express integration routes", () => {
@@ -73,6 +82,15 @@ describe("Express integration routes", () => {
     const response = await fetch(`${base}/api/webhooks/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "payment.succeeded", provider: "stripe", payload: { amount: 99 }, secret: "whsec_test" }) });
     const data = await response.json();
     expect(response.status).toBe(202); expect(data.signature).toMatchObject({ provider: "stripe", versions: ["v1", "v0"] }); expect(data.verification).toMatchObject({ valid: true, provider: "stripe", matchedVersion: "v1" });
+  });
+
+  it("accepts GitHub and Slack mock webhook profiles", async () => {
+    const base = await startTestServer();
+    const github = await fetch(`${base}/api/webhooks/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "push", provider: "github", payload: { ref: "refs/heads/main" }, secret: "gh_secret" }) });
+    const slack = await fetch(`${base}/api/webhooks/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "event_callback", provider: "slack", payload: { type: "event_callback" }, secret: "slack_secret" }) });
+    const githubData = await github.json(); const slackData = await slack.json();
+    expect(github.status).toBe(202); expect(githubData.signature).toMatchObject({ provider: "github", algorithm: "sha256", versions: ["sha256"] }); expect(githubData.signature.header).toMatch(/^sha256=/); expect(githubData.verification.provider).toBe("github");
+    expect(slack.status).toBe(202); expect(slackData.signature).toMatchObject({ provider: "slack", algorithm: "sha256", versions: ["v0"] }); expect(slackData.signature.header).toMatch(/^t=\d+,v0=/); expect(slackData.verification.provider).toBe("slack");
   });
 
   it("accepts a signed mock webhook and returns PASS diagnostics", async () => {

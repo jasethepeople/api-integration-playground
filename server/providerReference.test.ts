@@ -11,4 +11,9 @@ describe("provider reference panel data", () => {
     const reference = getProviderReference("stripe", "sha256", "t=1,v1=abc,v0=legacy");
     expect(reference).toMatchObject({ name: "STRIPE-STYLE", canonical: "${timestamp}.${raw_body}", header: "t=${timestamp},v1=${hmac_sha256},v0=${legacy_hmac_sha256}", exampleLabel: "t=1,v1=abc,v0=legacy" });
   });
+
+  it("describes GitHub and Slack signature headers", () => {
+    expect(getProviderReference("github", "sha512", "")).toMatchObject({ name: "GITHUB", canonical: "${raw_body}", header: "sha256=${hmac_sha256}" });
+    expect(getProviderReference("slack", "sha512", "")).toMatchObject({ name: "SLACK", canonical: "v0:${timestamp}:${raw_body}", header: "t=${timestamp},v0=${hmac_sha256}" });
+  });
 });
