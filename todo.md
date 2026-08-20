@@ -166,3 +166,8 @@
 - [x] Safeguard shortcuts against editable controls, invalid payloads, busy states, and empty generation history.
 - [x] Add visible shortcut hints and focused shortcut-resolution tests.
 - [x] Verify desktop/mobile presentation, typecheck, full tests, and save a checkpoint.
+
+- [x] Add visual hover and focus tooltips for automatic generation, latest restore, and signed webhook shortcut controls.
+- [x] Keep tooltip content aligned with documented shortcuts and accessible button labels.
+- [x] Add focused tooltip metadata tests and verify desktop/mobile behavior.
+- [x] Run typecheck, full tests, and save a checkpoint.

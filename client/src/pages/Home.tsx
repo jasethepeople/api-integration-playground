@@ -13,6 +13,7 @@ import { buildComparisonCard } from "@/lib/mockComparison";
 import { AutoGenerationMode, buildPresetPackHandoff, filterMockVariablePresets, generateAutomaticMockVariables, getPresetHandoffNotice, readCustomPresets, readPresetPackHandoff, resolvePresetDeleteDecision, resolvePresetImportDecision, saveCustomPreset, serializeCustomPresetPack, writeCustomPresets } from "@/lib/mockPresetManager";
 import { appendGenerationHistory, readGenerationHistory, restoreGenerationVariables, type MockGenerationHistoryEntry, writeGenerationHistory } from "@/lib/mockGenerationHistory";
 import { PLAYGROUND_SHORTCUT_LABELS, resolvePlaygroundShortcut } from "@/lib/keyboardShortcuts";
+import { getShortcutTooltipForButton } from "@/lib/shortcutTooltips";
 
 type LogEntry = { id: string; layer: "BROWSER" | "EXPRESS"; method: string; path: string; status: number; latency: number; time: string; verification?: "PASS" | "FAIL" };
 type WebhookHistoryEntry = { id: string; type: string; provider: string; algorithm: string; payload: JsonValue; generated: string; effective: string; status: number; verification: "PASS" | "FAIL"; timestamp: string; createdAt?: number; snapshot: JsonValue };
@@ -231,6 +232,21 @@ export default function Home() {
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [busy, generationHistory, payloadValidation.valid, webhookPayload, webhookSecret, webhookProvider, webhookTolerance, webhookTimestamp, signatureOverride, effectiveWebhookAlgorithm, autoGenerationMode, mockVariables, mockSeed]);
+
+  useEffect(() => {
+    const decorated = Array.from(document.querySelectorAll<HTMLButtonElement>(".console-shell button")).flatMap(button => {
+      const tooltip = getShortcutTooltipForButton(button.textContent ?? "");
+      if (!tooltip) return [];
+      const previousAriaLabel = button.getAttribute("aria-label");
+      button.dataset.shortcutTooltip = tooltip.tooltip;
+      button.setAttribute("aria-label", tooltip.ariaLabel);
+      return [{ button, previousAriaLabel }];
+    });
+    return () => decorated.forEach(({ button, previousAriaLabel }) => {
+      delete button.dataset.shortcutTooltip;
+      if (previousAriaLabel) button.setAttribute("aria-label", previousAriaLabel); else button.removeAttribute("aria-label");
+    });
+  }, []);
 
 
   return <main className="console-shell">
