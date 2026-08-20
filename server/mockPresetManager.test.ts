@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_MOCK_TEMPLATE_VARIABLES, MOCK_VARIABLE_PRESETS } from "../client/src/lib/mockTemplateVariables";
-import { deleteCustomPreset, filterMockVariablePresets, generateAutomaticMockVariables, isPresetCompatible, parseCustomPresetPack, saveCustomPreset, serializeCustomPresetPack } from "../client/src/lib/mockPresetManager";
+import { buildPresetPackHandoff, deleteCustomPreset, filterMockVariablePresets, generateAutomaticMockVariables, getPresetHandoffNotice, isPresetCompatible, parseCustomPresetPack, readPresetPackHandoff, resolvePresetDeleteDecision, resolvePresetImportDecision, saveCustomPreset, serializeCustomPresetPack } from "../client/src/lib/mockPresetManager";
 
 describe("custom mock preset manager", () => {
   it("saves, overwrites, and deletes custom presets", () => {
@@ -28,6 +28,24 @@ describe("custom mock preset manager", () => {
     expect(imported.imported).toBe(1);
     expect(imported.presets[0]?.name).toBe("Payment Smoke");
     expect(parseCustomPresetPack(JSON.stringify({ presets: [{ name: "bad", variables: {} }] })).imported).toBe(0);
+  });
+
+  it("creates and reads a shareable encoded preset-pack handoff", () => {
+    const custom = saveCustomPreset([], "Shared", "", DEFAULT_MOCK_TEMPLATE_VARIABLES, ["generic"], ["payment.succeeded"]).preset;
+    const link = buildPresetPackHandoff("https://playground.test/path#old", [custom]);
+    expect(readPresetPackHandoff(new URL(link).hash)).toContain("Shared");
+    expect(readPresetPackHandoff("#other=value")).toBeNull();
+    expect(getPresetHandoffNotice(true)).toBe("PRESET HANDOFF LINK COPIED");
+    expect(getPresetHandoffNotice(false)).toBe("HANDOFF COPY UNAVAILABLE");
+  });
+
+  it("preserves presets on cancel and changes them only after explicit confirmation", () => {
+    const custom = saveCustomPreset([], "Confirm Me", "", DEFAULT_MOCK_TEMPLATE_VARIABLES, ["generic"], ["payment.succeeded"]).preset;
+    expect(resolvePresetDeleteDecision("cancel", [custom], custom.id)).toEqual({ presets: [custom], deleted: false });
+    expect(resolvePresetDeleteDecision("confirm", [custom], custom.id).deleted).toBe(true);
+    const raw = serializeCustomPresetPack([custom]);
+    expect(resolvePresetImportDecision("cancel", raw, []).imported).toBe(0);
+    expect(resolvePresetImportDecision("confirm", raw, []).imported).toBe(1);
   });
 
   it("generates deterministic mode-specific variables", () => {

@@ -27,8 +27,24 @@ export function deleteCustomPreset(existing: MockVariablePreset[], id: MockVaria
   return existing.filter(preset => preset.id !== id || preset.builtIn);
 }
 
+export function resolvePresetDeleteDecision(decision: "cancel" | "confirm", existing: MockVariablePreset[], id: MockVariablePresetId): { presets: MockVariablePreset[]; deleted: boolean } {
+  if (decision === "cancel") return { presets: existing, deleted: false };
+  const presets = deleteCustomPreset(existing, id);
+  return { presets, deleted: presets.length !== existing.length };
+}
+
 export function serializeCustomPresetPack(presets: MockVariablePreset[]): string {
   return JSON.stringify({ version: PRESET_PACK_VERSION, presets: presets.filter(preset => !preset.builtIn) }, null, 2);
+}
+
+export function buildPresetPackHandoff(baseUrl: string, presets: MockVariablePreset[]): string {
+  return `${baseUrl.split("#")[0]}#preset-pack=${encodeURIComponent(serializeCustomPresetPack(presets))}`;
+}
+
+export function readPresetPackHandoff(hash: string): string | null {
+  const match = hash.match(/(?:^#|&)preset-pack=([^&]+)/);
+  if (!match) return null;
+  try { return decodeURIComponent(match[1]); } catch { return null; }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> { return typeof value === "object" && value !== null; }
@@ -50,6 +66,14 @@ export function parseCustomPresetPack(raw: string, existing: MockVariablePreset[
     }
     return { presets: [...existing, ...accepted], imported: accepted.length, rejected: candidate.length - accepted.length };
   } catch { return { presets: existing, imported: 0, rejected: 0 }; }
+}
+
+export function resolvePresetImportDecision(decision: "cancel" | "confirm", raw: string, existing: MockVariablePreset[]): { presets: MockVariablePreset[]; imported: number; rejected: number } {
+  return decision === "cancel" ? { presets: existing, imported: 0, rejected: 0 } : parseCustomPresetPack(raw, existing);
+}
+
+export function getPresetHandoffNotice(success: boolean): string {
+  return success ? "PRESET HANDOFF LINK COPIED" : "HANDOFF COPY UNAVAILABLE";
 }
 
 export function readCustomPresets(storage: Pick<Storage, "getItem"> | undefined): MockVariablePreset[] {

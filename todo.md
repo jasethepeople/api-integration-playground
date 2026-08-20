@@ -155,3 +155,9 @@
 - [x] Add JSON preset-pack export and defensive import with validation and duplicate handling.
 - [x] Add automatic mock-variable generation with configurable generation mode and safe application.
 - [x] Add persistence, focused tests, responsive verification, and a final checkpoint for the bundled pass.
+
+- [x] Add a persistent bounded history of automatic mock-variable generations with timestamps, mode, seed, inspection, and one-click restore.
+- [x] Add confirmation safeguards before deleting a custom preset and applying an imported preset pack.
+- [x] Add a shareable preset-pack handoff that copies an encoded pack link with safe fallback behavior.
+- [x] Add focused tests for generation history, restore, confirmations, sharing, persistence, and bounded behavior.
+- [x] Complete desktop/mobile verification, typecheck, full tests, and one final checkpoint for the finished playground.
