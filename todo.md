@@ -79,3 +79,7 @@
 
 - [x] Add focused tests for historical generated/effective copy targets and COPIED/RETRY feedback behavior.
 - [x] Re-run full verification after historical-copy coverage is added.
+
+- [x] Add provider, event-type, and verification-outcome filter controls to webhook history.
+- [x] Preserve bounded newest-first ordering, selection, and copy actions under filtering.
+- [x] Show filtered result counts and test filter combinations plus responsive layout.
