@@ -110,3 +110,8 @@
 - [x] Add single-line and multi-line parse-location tests and verify responsive layout.
 
 - [x] Capture a mobile-width malformed payload preview showing the line and column diagnostic.
+
+- [x] Add deterministic mock JSON templates for generic and Stripe-style provider profiles.
+- [x] Generate valid formatted payloads for payment.succeeded, user.created, and order.updated events.
+- [x] Add an explicit generator control that replaces the editor only on user action.
+- [x] Add provider/event template tests and verify desktop and mobile layouts.
