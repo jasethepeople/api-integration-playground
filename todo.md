@@ -88,3 +88,14 @@
 - [x] Persist provider, event-type, and verification filter preferences.
 - [x] Restore valid saved state safely and ignore malformed or unavailable storage.
 - [x] Test persistence helpers, restoration behavior, typecheck, and responsive layout.
+
+- [x] Add a Clear History button for saved webhook history.
+- [x] Require confirmation before wiping in-memory and local-storage history.
+- [x] Preserve active filter preferences and reset selected history safely.
+- [x] Test cancel/confirm behavior, storage clearing, typecheck, and responsive layout.
+
+- [x] Add focused tests for Clear History cancel versus confirm outcomes, selection reset, and preserved filters.
+- [x] Re-run mobile-width visual verification for the Clear History control and modal.
+
+- [x] Add a directly testable modal decision helper covering cancel unchanged state and confirm clearing state.
+- [x] Capture an explicit mobile-width preview with the confirmation modal open.

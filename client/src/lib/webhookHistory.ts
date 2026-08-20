@@ -96,3 +96,22 @@ export function writeHistoryStorage(storage: Pick<Storage, "setItem"> | undefine
     return false;
   }
 }
+
+export function clearHistoryStorage(storage: Pick<Storage, "removeItem"> | undefined): boolean {
+  try {
+    if (!storage) return false;
+    storage.removeItem(WEBHOOK_HISTORY_STORAGE_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function clearHistoryState<T>(history: T[], selectedHistoryId: string | null, filter: HistoryFilter) {
+  return { history: [] as T[], selectedHistoryId: null as string | null, filter, wasSelected: selectedHistoryId !== null && history.length > 0 };
+}
+
+export function resolveClearHistoryDecision<T>(decision: "cancel" | "confirm", history: T[], selectedHistoryId: string | null, filter: HistoryFilter) {
+  if (decision === "cancel") return { history, selectedHistoryId, filter, cleared: false };
+  return { ...clearHistoryState(history, selectedHistoryId, filter), cleared: true };
+}

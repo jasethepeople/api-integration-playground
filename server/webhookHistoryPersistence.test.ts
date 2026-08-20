@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DEFAULT_HISTORY_FILTER, WEBHOOK_HISTORY_STORAGE_KEY, readHistoryStorage, restoreHistoryState, serializeHistoryState, writeHistoryStorage } from "../client/src/lib/webhookHistory";
+import { DEFAULT_HISTORY_FILTER, WEBHOOK_HISTORY_STORAGE_KEY, clearHistoryStorage, readHistoryStorage, resolveClearHistoryDecision, restoreHistoryState, serializeHistoryState, writeHistoryStorage } from "../client/src/lib/webhookHistory";
 
 const entry = {
   id: "evt-1",
@@ -42,5 +42,24 @@ describe("webhook history browser storage", () => {
     const storage = { setItem: (key: string, value: string) => { writes[key] = value; } } as Pick<Storage, "setItem">;
     expect(writeHistoryStorage(storage, [entry], DEFAULT_HISTORY_FILTER)).toBe(true);
     expect(JSON.parse(writes[WEBHOOK_HISTORY_STORAGE_KEY]!)).toMatchObject({ history: [entry], filter: DEFAULT_HISTORY_FILTER });
+  });
+
+  it("clears the saved history key and handles blocked removal", () => {
+    const removed: string[] = [];
+    const storage = { removeItem: (key: string) => { removed.push(key); } } as Pick<Storage, "removeItem">;
+    expect(clearHistoryStorage(storage)).toBe(true);
+    expect(removed).toEqual([WEBHOOK_HISTORY_STORAGE_KEY]);
+    expect(clearHistoryStorage({ removeItem: () => { throw new Error("blocked"); } } as Pick<Storage, "removeItem">)).toBe(false);
+  });
+
+  it("resets history and selection while preserving active filters on confirm", () => {
+    const activeFilter = { provider: "stripe", type: "payment.succeeded", verification: "PASS" as const };
+    expect(resolveClearHistoryDecision("confirm", [entry], "evt-1", activeFilter)).toMatchObject({ history: [], selectedHistoryId: null, filter: activeFilter, cleared: true });
+  });
+
+  it("leaves history, selection, and filters unchanged on cancel", () => {
+    const activeFilter = { provider: "generic", type: "ALL", verification: "ALL" as const };
+    const history = [entry];
+    expect(resolveClearHistoryDecision("cancel", history, "evt-1", activeFilter)).toEqual({ history, selectedHistoryId: "evt-1", filter: activeFilter, cleared: false });
   });
 });
