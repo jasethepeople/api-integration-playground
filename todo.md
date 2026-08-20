@@ -15,8 +15,8 @@
 
 ## History
 
-- [ ] Initial generic API playground scope recorded before refined requirements.
-- [ ] Refined brutalist single-page console requirements recorded.
+- [x] Initial generic API playground scope recorded before refined requirements.
+- [x] Refined brutalist single-page console requirements recorded.
 
 ## Notes
 
