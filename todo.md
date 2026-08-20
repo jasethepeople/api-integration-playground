@@ -58,3 +58,16 @@
 - [x] Add or update tests and run typecheck, smoke tests, and visual preview verification.
 
 - [x] Re-run a webhook smoke test after the provider reference-panel change and record the result.
+
+- [x] Add one-click copy controls for canonical signing strings and header examples.
+- [x] Add copied-state feedback and preserve active provider switching behavior.
+- [x] Test and visually verify the copy-control update.
+
+- [x] Handle unsupported or failed clipboard writes without showing false success feedback.
+- [x] Add focused coverage for canonical/header copy actions, feedback reset, and provider switching regression.
+
+- [x] Add directly testable reference-copy target and label logic for canonical/header actions.
+- [x] Cover copied-state reset and retry-state transitions.
+- [x] Cover provider switching with copy targets for generic and Stripe profiles.
+
+- [x] Add deterministic tests for copy success reset and failed-write retry transitions.
