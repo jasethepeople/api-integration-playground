@@ -32,3 +32,15 @@
 
 - [x] Fix raw JSON token highlighting so injected markup is never re-tokenized.
 - [x] Add focused validation for the raw JSON highlighter output.
+
+- [x] Add configurable webhook signing secret and HMAC algorithm controls.
+- [x] Add timestamped signature generation and verification using constant-time comparison.
+- [x] Add visible signature header preview and verification pass/fail diagnostics.
+- [x] Wire signed verification into the mock webhook route and dual-layer logs.
+- [x] Add tests for valid, tampered, expired, and malformed webhook signatures.
+- [x] Re-run typecheck, tests, smoke tests, and visual preview verification.
+
+- [x] Add a dedicated read-only preview of the exact generated signature header before webhook execution.
+- [x] Add a nearby summary of the configured algorithm, tolerance, and last verification result.
+
+- [x] Keep the generated HMAC header visible at all times and show any manual override in a separate effective-header preview.
