@@ -99,3 +99,8 @@
 
 - [x] Add a directly testable modal decision helper covering cancel unchanged state and confirm clearing state.
 - [x] Capture an explicit mobile-width preview with the confirmation modal open.
+
+- [x] Add real-time JSON validation feedback to the webhook payload editor.
+- [x] Add a safe auto-format control that normalizes valid JSON without overwriting invalid input.
+- [x] Prevent malformed payloads from triggering signed webhook tests while preserving editor text.
+- [x] Add parser/formatter tests and verify desktop and mobile editor layouts.
