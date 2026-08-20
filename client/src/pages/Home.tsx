@@ -47,6 +47,7 @@ export default function Home() {
   const [body, setBody] = useState(defaultBodies.GET);
   const [webhook, setWebhook] = useState(webhookTypes[0]);
   const [webhookPayload, setWebhookPayload] = useState('{\n  "id": "evt_8df2",\n  "livemode": false,\n  "created": 1721318400\n}');
+  const [webhookProvider, setWebhookProvider] = useState("generic");
   const [webhookSecret, setWebhookSecret] = useState("whsec_demo");
   const [webhookAlgorithm, setWebhookAlgorithm] = useState("sha256");
   const [webhookTolerance, setWebhookTolerance] = useState("300");
@@ -76,12 +77,17 @@ export default function Home() {
         const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(webhookSecret), { name: "HMAC", hash: webhookAlgorithm === "sha512" ? "SHA-512" : "SHA-256" }, false, ["sign"]);
         const buffer = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(`${webhookTimestamp}.${raw}`));
         const digest = Array.from(new Uint8Array(buffer)).map(value => value.toString(16).padStart(2, "0")).join("");
-        if (!cancelled) setGeneratedSignature(`t=${webhookTimestamp},v1=${digest}`);
+        if (webhookProvider === "stripe") {
+          const legacyKey = await crypto.subtle.importKey("raw", new TextEncoder().encode(webhookSecret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+          const legacy = await crypto.subtle.sign("HMAC", legacyKey, new TextEncoder().encode(`${webhookTimestamp - 1}.${raw}`));
+          const v0 = Array.from(new Uint8Array(legacy)).map(value => value.toString(16).padStart(2, "0")).join("");
+          if (!cancelled) setGeneratedSignature(`t=${webhookTimestamp},v1=${digest},v0=${v0}`);
+        } else if (!cancelled) setGeneratedSignature(`t=${webhookTimestamp},v1=${digest}`);
       } catch { if (!cancelled) setGeneratedSignature("INVALID PAYLOAD — SIGNATURE UNAVAILABLE"); }
     }
     void previewSignature();
     return () => { cancelled = true; };
-  }, [webhookPayload, webhookSecret, webhookAlgorithm, webhookTimestamp]);
+  }, [webhookPayload, webhookSecret, webhookAlgorithm, webhookTimestamp, webhookProvider]);
 
   function chooseEndpoint(index: number) {
     const endpoint = endpoints[index]; setSelectedEndpoint(index); setCustomUrl(""); setMethod(endpoint.method); setPath(endpoint.path); setPathParams({ id: "itm_2048" }); setBody(defaultBodies[endpoint.method]);
@@ -104,7 +110,7 @@ export default function Home() {
   async function triggerWebhook() {
     const started = performance.now(); setBusy(true);
     let payload: JsonValue = {}; try { payload = JSON.parse(webhookPayload); } catch { setResponse({ error: "Invalid webhook JSON", detail: "Fix the webhook payload before triggering." }); setResponseMeta({ status: "400", latency: 0, source: "WEBHOOK" }); setBusy(false); return; }
-    const res = await fetch("/api/webhooks/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: webhook, payload, secret: webhookSecret, algorithm: webhookAlgorithm, toleranceSeconds: Number(webhookTolerance) || 300, timestamp: webhookTimestamp, signature: signatureOverride.trim() }) });
+    const res = await fetch("/api/webhooks/simulate", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ type: webhook, payload, provider: webhookProvider, secret: webhookSecret, algorithm: webhookAlgorithm, toleranceSeconds: Number(webhookTolerance) || 300, timestamp: webhookTimestamp, signature: signatureOverride.trim() }) });
     const data = await res.json(); const latency = Math.round(performance.now() - started); setResponse(data); setLastVerification(data.verification?.valid ? "PASS" : "FAIL"); setResponseMeta({ status: String(res.status), latency, source: data.verification?.valid ? "WEBHOOK / VERIFIED" : "WEBHOOK / REJECTED" }); await pushBrowserLog("POST", `/webhooks/${webhook}`, res.status, latency); setLogs(prev => [data.serverLog, ...prev].slice(0, 12)); setWebhookTimestamp(Math.floor(Date.now() / 1000)); setBusy(false);
   }
   async function copyResponse() { await navigator.clipboard?.writeText(pretty(response)); setCopied(true); setTimeout(() => setCopied(false), 1200); }
@@ -125,7 +131,8 @@ export default function Home() {
         <div className="section-kicker webhook-kicker"><span>02</span><span>WEBHOOK SIMULATOR</span><span className="rule" /></div>
         <label className="field-label">EVENT TYPE</label><select value={webhook} onChange={e => setWebhook(e.target.value)}>{webhookTypes.map(item => <option key={item}>{item}</option>)}</select><label className="field-label">INBOUND PAYLOAD <span>POST /webhooks/{webhook}</span></label><textarea className="json-editor webhook-editor" value={webhookPayload} onChange={e => setWebhookPayload(e.target.value)} spellCheck={false} />
         <div className="signature-head"><label className="field-label">HMAC VERIFICATION <span>RAW JSON IS SIGNED</span></label><span className="signature-badge">{signatureOverride ? "MANUAL HEADER" : "AUTO SIGN"}</span></div>
-        <div className="signature-grid"><div><label className="field-label">SIGNING SECRET</label><input type="password" value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)} /></div><div><label className="field-label">ALGORITHM</label><select value={webhookAlgorithm} onChange={e => setWebhookAlgorithm(e.target.value)}><option value="sha256">HMAC-SHA256</option><option value="sha512">HMAC-SHA512</option></select></div></div>
+        <div className="signature-grid"><div><label className="field-label">PROVIDER PROFILE</label><select value={webhookProvider} onChange={e => setWebhookProvider(e.target.value)}><option value="generic">GENERIC HMAC</option><option value="stripe">STRIPE-STYLE</option></select></div><div><label className="field-label">SIGNING SECRET</label><input type="password" value={webhookSecret} onChange={e => setWebhookSecret(e.target.value)} /></div></div>
+        <div className="signature-grid"><div><label className="field-label">ALGORITHM</label><select value={webhookAlgorithm} onChange={e => setWebhookAlgorithm(e.target.value)}><option value="sha256">HMAC-SHA256</option><option value="sha512">HMAC-SHA512</option></select></div></div>
         <div className="signature-grid"><div><label className="field-label">TOLERANCE <span>SECONDS</span></label><input inputMode="numeric" value={webhookTolerance} onChange={e => setWebhookTolerance(e.target.value)} /></div><div><label className="field-label">SIGNATURE OVERRIDE <span>OPTIONAL / TEST TAMPER</span></label><input value={signatureOverride} onChange={e => setSignatureOverride(e.target.value)} placeholder="t=...,v1=..." /></div></div>
         <p className="signature-note"><span>t=TIMESTAMP</span> + <span>v1=HMAC DIGEST</span> · verification uses constant-time comparison</p><label className="field-label">GENERATED SIGNATURE <span>READ-ONLY / HMAC OUTPUT</span></label><input className="signature-preview" readOnly value={generatedSignature} /><label className="field-label">EFFECTIVE HEADER <span>{signatureOverride ? "MANUAL OVERRIDE / SENT" : "GENERATED / SENT"}</span></label><input className={`signature-preview ${signatureOverride ? "override" : ""}`} readOnly value={signatureOverride || generatedSignature} /><div className="verification-summary"><span>LAST CHECK</span><strong className={lastVerification.toLowerCase()}>{lastVerification}</strong><span>{webhookAlgorithm.toUpperCase()} · ±{webhookTolerance || "300"}S</span></div><button className="secondary-action" onClick={triggerWebhook} disabled={busy}><Webhook size={15} /> {busy ? "VERIFYING..." : "TRIGGER SIGNED WEBHOOK"}<span>↗</span></button>
       </section>

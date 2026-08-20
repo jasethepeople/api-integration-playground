@@ -44,3 +44,10 @@
 - [x] Add a nearby summary of the configured algorithm, tolerance, and last verification result.
 
 - [x] Keep the generated HMAC header visible at all times and show any manual override in a separate effective-header preview.
+
+- [x] Add selectable webhook provider profiles with generic HMAC and Stripe-style formats.
+- [x] Implement Stripe-style multi-signature generation with t, v1, and v0 fields.
+- [x] Verify any valid v1 signature while retaining constant-time comparison and timestamp tolerance.
+- [x] Add provider-aware header previews, effective-header behavior, and verification diagnostics.
+- [x] Add tests for provider profiles, multi-signature headers, tampering, expiry, and generic-mode regression.
+- [x] Re-run typecheck, tests, smoke tests, and visual preview verification.

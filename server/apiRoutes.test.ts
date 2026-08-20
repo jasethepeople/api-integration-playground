@@ -46,6 +46,18 @@ describe("HMAC webhook verification", () => {
     const result = verifyWebhookSignature(payload, signed.header, secret, "sha512", 300, now);
     expect(result).toMatchObject({ valid: false, reason: "Timestamp outside 300s tolerance" });
   });
+
+  it("generates and verifies a Stripe-style t/v1/v0 header", () => {
+    const signed = signWebhookPayload(payload, secret, now, "sha256", "stripe");
+    expect(signed.header).toMatch(/^t=\d+,v1=[a-f0-9]{64},v0=[a-f0-9]{64}$/);
+    expect(verifyWebhookSignature(payload, signed.header, secret, "sha256", 300, now, "stripe")).toMatchObject({ valid: true, provider: "stripe", matchedVersion: "v1" });
+  });
+
+  it("accepts a valid legacy v0 signature when v1 is rotated", () => {
+    const signed = signWebhookPayload(payload, secret, now, "sha256", "stripe");
+    const v0Only = `t=${now},v0=${signed.v0}`;
+    expect(verifyWebhookSignature(payload, v0Only, secret, "sha256", 300, now, "stripe")).toMatchObject({ valid: true, matchedVersion: "v0" });
+  });
 });
 
 describe("Express integration routes", () => {
@@ -54,6 +66,13 @@ describe("Express integration routes", () => {
     const response = await fetch(`${base}/api/proxy`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ method: "POST", url: "https://api.generic-saas.dev/orders", body: { amount: 12500 }, apiKey: "sk_test_demo" }) });
     const data = await response.json();
     expect(response.status).toBe(201); expect(data._meta).toMatchObject({ forwarded: true, apiKeyAttached: true }); expect(data.serverLog).toMatchObject({ layer: "EXPRESS", status: 201, method: "POST" });
+  });
+
+  it("accepts a Stripe-style mock webhook and reports its provider versions", async () => {
+    const base = await startTestServer();
+    const response = await fetch(`${base}/api/webhooks/simulate`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ type: "payment.succeeded", provider: "stripe", payload: { amount: 99 }, secret: "whsec_test" }) });
+    const data = await response.json();
+    expect(response.status).toBe(202); expect(data.signature).toMatchObject({ provider: "stripe", versions: ["v1", "v0"] }); expect(data.verification).toMatchObject({ valid: true, provider: "stripe", matchedVersion: "v1" });
   });
 
   it("accepts a signed mock webhook and returns PASS diagnostics", async () => {
