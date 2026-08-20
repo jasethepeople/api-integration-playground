@@ -140,25 +140,52 @@ export const MOCK_TEMPLATE_VARIABLE_LABELS: Record<keyof MockTemplateVariables, 
 
 export const MOCK_TEMPLATE_STORAGE_KEY = "api-playground:mock-template:v1";
 
-export function readMockTemplateStorage(storage: Pick<Storage, "getItem"> | undefined): { variables: MockTemplateVariables; randomize: boolean; seed: string } {
+export function readMockTemplateStorage(storage: Pick<Storage, "getItem"> | undefined): { variables: MockTemplateVariables; randomize: boolean; seed: string; presetId: MockVariablePresetId } {
   try {
     const raw = storage?.getItem(MOCK_TEMPLATE_STORAGE_KEY);
-    if (!raw) return { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820" };
-    const parsed = JSON.parse(raw) as { variables?: Partial<MockTemplateVariables>; randomize?: boolean; seed?: string };
+    if (!raw) return { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820", presetId: "default" };
+    const parsed = JSON.parse(raw) as { variables?: Partial<MockTemplateVariables>; randomize?: boolean; seed?: string; presetId?: MockVariablePresetId };
     const variables = { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, ...(parsed?.variables ?? {}) };
     const result = validateMockTemplateVariables(variables);
-    return result.valid ? { variables, randomize: Boolean(parsed?.randomize), seed: typeof parsed?.seed === "string" && parsed.seed.trim() ? parsed.seed : "20260820" } : { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820" };
+    return result.valid ? { variables, randomize: Boolean(parsed?.randomize), seed: typeof parsed?.seed === "string" && parsed.seed.trim() ? parsed.seed : "20260820", presetId: parsed?.presetId && ["default", "high_value_payment", "new_customer", "github_release", "slack_alert", "edge_case", "custom"].includes(parsed.presetId) ? parsed.presetId : getMockVariablePresetId(variables) } : { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820", presetId: "default" };
   } catch {
-    return { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820" };
+    return { variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, randomize: false, seed: "20260820", presetId: "default" };
   }
 }
 
-export function writeMockTemplateStorage(storage: Pick<Storage, "setItem"> | undefined, variables: MockTemplateVariables, randomize: boolean, seed: string): boolean {
+export function writeMockTemplateStorage(storage: Pick<Storage, "setItem"> | undefined, variables: MockTemplateVariables, randomize: boolean, seed: string, presetId: MockVariablePresetId): boolean {
   try {
     if (!storage) return false;
-    storage.setItem(MOCK_TEMPLATE_STORAGE_KEY, JSON.stringify({ variables, randomize, seed }));
+    storage.setItem(MOCK_TEMPLATE_STORAGE_KEY, JSON.stringify({ variables, randomize, seed, presetId }));
     return true;
   } catch {
     return false;
   }
+}
+
+export type MockVariablePresetId = "default" | "high_value_payment" | "new_customer" | "github_release" | "slack_alert" | "edge_case" | "custom";
+
+export type MockVariablePreset = {
+  id: Exclude<MockVariablePresetId, "custom">;
+  name: string;
+  description: string;
+  variables: MockTemplateVariables;
+};
+
+export const MOCK_VARIABLE_PRESETS: MockVariablePreset[] = [
+  { id: "default", name: "Playground Default", description: "Balanced fixture values for general integration testing.", variables: DEFAULT_MOCK_TEMPLATE_VARIABLES },
+  { id: "high_value_payment", name: "High-Value Payment", description: "Large USD payment with distinct payment and customer identifiers.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "125000", currency: "usd", paymentId: "pay_high_value_001", customerId: "cus_enterprise_001", orderId: "ord_high_value_001", messageText: "High-value payment succeeded" } },
+  { id: "new_customer", name: "New Customer", description: "Fresh identity fixture for account creation and onboarding flows.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, userId: "usr_new_customer_001", email: "new.customer@example.test", name: "New Customer", eventId: "evt_user_created_001", messageText: "New customer created" } },
+  { id: "github_release", name: "GitHub Release", description: "Release branch push and pull-request context for repository integrations.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, repository: "acme/platform-api", branch: "release/2026-08", pullRequestNumber: "108", eventId: "commit_release_001", messageText: "Prepare August release" } },
+  { id: "slack_alert", name: "Slack Alert", description: "Operational alert values for Slack event_callback fixtures.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, teamId: "T_ALERTS01", appId: "A_ALERTS01", slackUserId: "U_ONCALL01", channelId: "C_INCIDENT01", messageText: "[SEV-2] Elevated webhook latency detected", eventId: "EvAlert0001" } },
+  { id: "edge_case", name: "Edge Case", description: "Zero-value payment and explicit boundary identifiers for negative-path testing.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "0", currency: "jpy", paymentId: "pay_edge_zero", orderId: "ord_edge_zero", customerId: "cus_edge_case", userId: "usr_edge_case", eventId: "evt_edge_case", pullRequestNumber: "1", messageText: "Boundary value fixture" } },
+];
+
+export function getMockVariablePreset(id: MockVariablePresetId): MockVariablePreset | null {
+  return MOCK_VARIABLE_PRESETS.find(preset => preset.id === id) ?? null;
+}
+
+export function getMockVariablePresetId(variables: MockTemplateVariables): MockVariablePresetId {
+  const matching = MOCK_VARIABLE_PRESETS.find(preset => JSON.stringify(preset.variables) === JSON.stringify(variables));
+  return matching?.id ?? "custom";
 }

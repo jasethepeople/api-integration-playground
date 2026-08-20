@@ -143,3 +143,9 @@
 - [x] Add an explicit generated-value preview showing the exact variables that Generate Mock will apply.
 - [x] Add a visible reproducible seed control and persist it safely with the randomize preference.
 - [x] Add focused tests for comparison payload fallback and provider reference inputs.
+
+- [x] Add named mock-variable presets for common payment, identity, GitHub, Slack, and edge-case scenarios.
+- [x] Add quick-load preset controls with visible active preset state and custom-edit detection.
+- [x] Persist the selected preset safely without overwriting user-edited variables unexpectedly.
+- [x] Add focused preset definition, loading, validation, and persistence tests.
+- [x] Verify desktop/mobile preset UX, typecheck, full tests, and save a checkpoint.
