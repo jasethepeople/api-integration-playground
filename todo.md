@@ -71,3 +71,11 @@
 - [x] Cover provider switching with copy targets for generic and Stripe profiles.
 
 - [x] Add deterministic tests for copy success reset and failed-write retry transitions.
+
+- [x] Add a bounded recent webhook history list with payload, provider, signature, outcome, and timestamp.
+- [x] Allow selecting a history entry to inspect its payload and signature details.
+- [x] Add copy actions for historical generated and effective signatures.
+- [x] Preserve existing request logs and verify history bounds, selection, copy behavior, typecheck, tests, and visual layout.
+
+- [x] Add focused tests for historical generated/effective copy targets and COPIED/RETRY feedback behavior.
+- [x] Re-run full verification after historical-copy coverage is added.
