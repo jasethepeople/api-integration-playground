@@ -149,3 +149,9 @@
 - [x] Persist the selected preset safely without overwriting user-edited variables unexpectedly.
 - [x] Add focused preset definition, loading, validation, and persistence tests.
 - [x] Verify desktop/mobile preset UX, typecheck, full tests, and save a checkpoint.
+
+- [x] Add user-created custom preset save, overwrite, and delete management.
+- [x] Add provider/event-aware preset filtering while preserving built-in preset visibility.
+- [x] Add JSON preset-pack export and defensive import with validation and duplicate handling.
+- [x] Add automatic mock-variable generation with configurable generation mode and safe application.
+- [x] Add persistence, focused tests, responsive verification, and a final checkpoint for the bundled pass.

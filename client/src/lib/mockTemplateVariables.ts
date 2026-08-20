@@ -163,22 +163,27 @@ export function writeMockTemplateStorage(storage: Pick<Storage, "setItem"> | und
   }
 }
 
-export type MockVariablePresetId = "default" | "high_value_payment" | "new_customer" | "github_release" | "slack_alert" | "edge_case" | "custom";
+export type MockVariablePresetId = string;
+export type MockPresetProvider = "generic" | "stripe" | "github" | "slack";
+export type MockPresetEvent = "payment.succeeded" | "user.created" | "order.updated" | "push" | "pull_request" | "event_callback" | "url_verification";
 
 export type MockVariablePreset = {
   id: Exclude<MockVariablePresetId, "custom">;
   name: string;
   description: string;
   variables: MockTemplateVariables;
+  providers: MockPresetProvider[];
+  events: MockPresetEvent[];
+  builtIn?: boolean;
 };
 
 export const MOCK_VARIABLE_PRESETS: MockVariablePreset[] = [
-  { id: "default", name: "Playground Default", description: "Balanced fixture values for general integration testing.", variables: DEFAULT_MOCK_TEMPLATE_VARIABLES },
-  { id: "high_value_payment", name: "High-Value Payment", description: "Large USD payment with distinct payment and customer identifiers.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "125000", currency: "usd", paymentId: "pay_high_value_001", customerId: "cus_enterprise_001", orderId: "ord_high_value_001", messageText: "High-value payment succeeded" } },
-  { id: "new_customer", name: "New Customer", description: "Fresh identity fixture for account creation and onboarding flows.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, userId: "usr_new_customer_001", email: "new.customer@example.test", name: "New Customer", eventId: "evt_user_created_001", messageText: "New customer created" } },
-  { id: "github_release", name: "GitHub Release", description: "Release branch push and pull-request context for repository integrations.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, repository: "acme/platform-api", branch: "release/2026-08", pullRequestNumber: "108", eventId: "commit_release_001", messageText: "Prepare August release" } },
-  { id: "slack_alert", name: "Slack Alert", description: "Operational alert values for Slack event_callback fixtures.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, teamId: "T_ALERTS01", appId: "A_ALERTS01", slackUserId: "U_ONCALL01", channelId: "C_INCIDENT01", messageText: "[SEV-2] Elevated webhook latency detected", eventId: "EvAlert0001" } },
-  { id: "edge_case", name: "Edge Case", description: "Zero-value payment and explicit boundary identifiers for negative-path testing.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "0", currency: "jpy", paymentId: "pay_edge_zero", orderId: "ord_edge_zero", customerId: "cus_edge_case", userId: "usr_edge_case", eventId: "evt_edge_case", pullRequestNumber: "1", messageText: "Boundary value fixture" } },
+  { id: "default", name: "Playground Default", description: "Balanced fixture values for general integration testing.", variables: DEFAULT_MOCK_TEMPLATE_VARIABLES, providers: ["generic", "stripe", "github", "slack"], events: ["payment.succeeded", "user.created", "order.updated", "push", "pull_request", "event_callback", "url_verification"], builtIn: true },
+  { id: "high_value_payment", name: "High-Value Payment", description: "Large USD payment with distinct payment and customer identifiers.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "125000", currency: "usd", paymentId: "pay_high_value_001", customerId: "cus_enterprise_001", orderId: "ord_high_value_001", messageText: "High-value payment succeeded" }, providers: ["generic", "stripe"], events: ["payment.succeeded", "order.updated"], builtIn: true },
+  { id: "new_customer", name: "New Customer", description: "Fresh identity fixture for account creation and onboarding flows.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, userId: "usr_new_customer_001", email: "new.customer@example.test", name: "New Customer", eventId: "evt_user_created_001", messageText: "New customer created" }, providers: ["generic", "stripe"], events: ["user.created"], builtIn: true },
+  { id: "github_release", name: "GitHub Release", description: "Release branch push and pull-request context for repository integrations.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, repository: "acme/platform-api", branch: "release/2026-08", pullRequestNumber: "108", eventId: "commit_release_001", messageText: "Prepare August release" }, providers: ["github"], events: ["push", "pull_request"], builtIn: true },
+  { id: "slack_alert", name: "Slack Alert", description: "Operational alert values for Slack event_callback fixtures.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, teamId: "T_ALERTS01", appId: "A_ALERTS01", slackUserId: "U_ONCALL01", channelId: "C_INCIDENT01", messageText: "[SEV-2] Elevated webhook latency detected", eventId: "EvAlert0001" }, providers: ["slack"], events: ["event_callback", "url_verification"], builtIn: true },
+  { id: "edge_case", name: "Edge Case", description: "Zero-value payment and explicit boundary identifiers for negative-path testing.", variables: { ...DEFAULT_MOCK_TEMPLATE_VARIABLES, amount: "0", currency: "jpy", paymentId: "pay_edge_zero", orderId: "ord_edge_zero", customerId: "cus_edge_case", userId: "usr_edge_case", eventId: "evt_edge_case", pullRequestNumber: "1", messageText: "Boundary value fixture" }, providers: ["generic", "stripe", "github", "slack"], events: ["payment.succeeded", "user.created", "order.updated", "push", "pull_request", "event_callback", "url_verification"], builtIn: true },
 ];
 
 export function getMockVariablePreset(id: MockVariablePresetId): MockVariablePreset | null {
